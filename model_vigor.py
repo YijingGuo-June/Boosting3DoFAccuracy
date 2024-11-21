@@ -63,11 +63,13 @@ class ModelVigor(nn.Module):
         shift_u = shift_u * S / 4
         shift_v = shift_v * S / 4
 
+        # ii,jj分别表示行索引和列索引
         ii, jj = torch.meshgrid(torch.arange(0, S, dtype=torch.float32, device=shift_u.device),
                                 torch.arange(0, S, dtype=torch.float32, device=shift_u.device))
         ii = ii.unsqueeze(dim=0).repeat(B, 1, 1)  # [B, S, S] v dimension
         jj = jj.unsqueeze(dim=0).repeat(B, 1, 1)  # [B, S, S] u dimension
 
+        # python的广播机制
         radius = torch.sqrt((ii - (S / 2 - 0.5 + shift_v.reshape(-1, 1, 1))) ** 2 + (
                     jj - (S / 2 - 0.5 + shift_u.reshape(-1, 1, 1))) ** 2)
 
@@ -162,6 +164,7 @@ class ModelVigor(nn.Module):
             grd_feat_list[2], None, gt_rot, shift_u, shift_v, level=2, meter_per_pixel=meter_per_pixel
         )
 
+        # 论文公式4下面的一段有解释，仅用最粗糙的特征级别作cross-view transformer，然后用解码器解码回高像素
         grd2sat8_attn = self.CVattn(grd2sat8, grd8, u, geo_mask=None)
         grd2sat4_attn = grd2sat4 + self.Dec4(grd2sat8_attn, grd2sat4)
         grd2sat2_attn = grd2sat2 + self.Dec2(grd2sat4_attn, grd2sat2)

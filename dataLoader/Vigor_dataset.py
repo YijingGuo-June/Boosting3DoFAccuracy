@@ -23,7 +23,7 @@ from torch.utils.data import Dataset, Subset
 
 num_thread_workers = 2
 # root = '/backup/dataset/VIGOR'
-root = '/home/yujiao/dataset/VIGOR'
+root = '/data/dataset/VIGOR'
 
 
 class VIGORDataset(Dataset):
