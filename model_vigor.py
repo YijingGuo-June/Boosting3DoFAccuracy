@@ -6,6 +6,8 @@ from torchvision import transforms
 import utils
 import os
 import torchvision.transforms.functional as TF
+from DINOv2 import DINOv2Featurizer
+from DINOv2 import Encoder as DINOv2Encoder
 
 # from GRU1 import ElevationEsitimate,VisibilityEsitimate,VisibilityEsitimate2,GRUFuse
 # from VGG import VGGUnet, VGGUnet_G2S
@@ -31,9 +33,10 @@ class ModelVigor(nn.Module):
 
         self.rotation_range = args.rotation_range
 
-        self.SatFeatureNet = VGGUnet(self.level)
+        self.SatFeatureNet = DINOv2Featurizer()
+
         if self.args.proj == 'CrossAttn':
-            self.GrdEnc = Encoder()
+            self.GrdEnc = DINOv2Encoder()
             self.GrdDec = Decoder()
             self.Dec4 = Decoder4()
             self.Dec2 = Decoder2()
@@ -165,8 +168,8 @@ class ModelVigor(nn.Module):
         )
 
         # 论文公式4下面的一段有解释，仅用最粗糙的特征级别作cross-view transformer，然后用解码器解码回高像素
-        grd2sat8_attn = self.CVattn(grd2sat8, grd8, u, geo_mask=None)
-        grd2sat4_attn = grd2sat4 + self.Dec4(grd2sat8_attn, grd2sat4)
+        grd2sat8_attn = self.CVattn(grd2sat8, grd8, u, geo_mask=None) # MHCA(FG_g2s, Fg)
+        grd2sat4_attn = grd2sat4 + self.Dec4(grd2sat8_attn, grd2sat4) # 公式4：加号右边是MLP里的skip connection
         grd2sat2_attn = grd2sat2 + self.Dec2(grd2sat4_attn, grd2sat2)
 
         grd_feat_list = [grd2sat8_attn, grd2sat4_attn, grd2sat2_attn]

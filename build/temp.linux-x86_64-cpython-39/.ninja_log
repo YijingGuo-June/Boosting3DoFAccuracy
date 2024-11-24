@@ -1,0 +1,4 @@
+# ninja log v5
+0	19098	1732375972044808345	/home/yijing/workspace/Boosting3DoFAccuracy/build/temp.linux-x86_64-cpython-39/featup/adaptive_conv_cuda/adaptive_conv_cuda.o	155b4f3fea76f614
+0	46057	1732375998992243012	/home/yijing/workspace/Boosting3DoFAccuracy/build/temp.linux-x86_64-cpython-39/featup/adaptive_conv_cuda/adaptive_conv_kernel.o	21717fd4c9f4dc56
+0	19665	1732376019171824377	/home/yijing/workspace/Boosting3DoFAccuracy/build/temp.linux-x86_64-cpython-39/featup/adaptive_conv_cuda/adaptive_conv.o	a8513d5a3606b4cd

@@ -287,7 +287,7 @@ def parse_args():
 
     parser.add_argument('--rotation_range', type=float, default=0., help='degree')
 
-    parser.add_argument('--batch_size', type=int, default=8, help='batch size')
+    parser.add_argument('--batch_size', type=int, default=4, help='batch size')
 
     parser.add_argument('--proj', type=str, default='CrossAttn', help='geo, polar, nn, CrossAttn')
 

@@ -34,3 +34,21 @@ distance within 1 meters (init, pred): 0.359083850931677 11.374223602484472
 distance within 3 meters (init, pred): 2.3680124223602483 54.95923913043478
 distance within 5 meters (init, pred): 6.152950310559007 70.1475155279503
 ====================================
+====================================
+       EPOCH: 0
+Time per image (second): 0.3972642854874178
+Distance average: (init, pred)14.285706 7.6551285
+Distance median: (init, pred)14.991762 4.705673
+distance within 1 meters (init, pred): 0.33967391304347827 4.483695652173913
+distance within 3 meters (init, pred): 2.0671583850931676 31.482919254658388
+distance within 5 meters (init, pred): 5.163043478260869 52.27096273291926
+====================================
+====================================
+       EPOCH: 1
+Time per image (second): 0.32634599768319483
+Distance average: (init, pred)14.285706 7.1418214
+Distance median: (init, pred)14.991762 4.206499
+distance within 1 meters (init, pred): 0.33967391304347827 5.62888198757764
+distance within 3 meters (init, pred): 2.0671583850931676 34.75349378881988
+distance within 5 meters (init, pred): 5.163043478260869 57.24961180124224
+====================================

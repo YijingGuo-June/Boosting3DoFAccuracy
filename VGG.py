@@ -121,47 +121,47 @@ class VGGUnet(nn.Module):
 
     def forward(self, x):
         # block0
-        x0 = self.conv0(x)
-        x1 = self.relu(x0)
-        x2 = self.conv2(x1)
-        x3, ind3 = self.max_pool(x2)  # [H/2, W/2]
+        x0 = self.conv0(x)   # [B, 64, H, W]
+        x1 = self.relu(x0)   # [B, 64, H, W]
+        x2 = self.conv2(x1)  # [B, 64, H, W]
+        x3, ind3 = self.max_pool(x2)  # [B, 64, H/2, W/2]
 
-        x4 = self.relu(x3)
-        x5 = self.conv5(x4)
-        x6 = self.relu(x5)
-        x7 = self.conv7(x6)
-        x8, ind8 = self.max_pool(x7)  # [H/4, W/4]
+        x4 = self.relu(x3)   # [B, 64, H/2, W/2]
+        x5 = self.conv5(x4)  # [B, 128, H/2, W/2]
+        x6 = self.relu(x5)   # [B, 128, H/2, W/2]
+        x7 = self.conv7(x6)  # [B, 128, H/2, W/2]
+        x8, ind8 = self.max_pool(x7)  # [B, 128, H/4, W/4]
 
         # block2
-        x9 = self.relu(x8)
-        x10 = self.conv10(x9)
-        x11 = self.relu(x10)
-        x12 = self.conv12(x11)
-        x13 = self.relu(x12)
-        x14 = self.conv14(x13)
-        x15, ind15 = self.max_pool(x14)  # [H/8, W/8]
+        x9 = self.relu(x8)    # [B, 128, H/4, W/4]
+        x10 = self.conv10(x9) # [B, 256, H/4, W/4]
+        x11 = self.relu(x10)  # [B, 256, H/4, W/4]
+        x12 = self.conv12(x11)# [B, 256, H/4, W/4]
+        x13 = self.relu(x12)  # [B, 256, H/4, W/4]
+        x14 = self.conv14(x13)# [B, 256, H/4, W/4]
+        x15, ind15 = self.max_pool(x14)  # [B, 256, H/8, W/8]
 
         # dec1
-        x16 = F.interpolate(x15, [x8.shape[2], x9.shape[3]], mode="nearest")
-        x17 = torch.cat([x16, x8], dim=1)
-        x18 = self.conv_dec1(x17)  # [H/4, W/4]
+        x16 = F.interpolate(x15, [x8.shape[2], x8.shape[3]], mode="nearest")  # [B, 256, H/4, W/4]
+        x17 = torch.cat([x16, x8], dim=1)  # [B, 384, H/4, W/4] (256+128)
+        x18 = self.conv_dec1(x17)  # [B, 128, H/4, W/4]
 
         # dec2
-        x19 = F.interpolate(x18, [x3.shape[2], x3.shape[3]], mode="nearest")
-        x20 = torch.cat([x19, x3], dim=1)
-        x21 = self.conv_dec2(x20)  # [H/2, W/2]
+        x19 = F.interpolate(x18, [x3.shape[2], x3.shape[3]], mode="nearest")  # [B, 128, H/2, W/2]
+        x20 = torch.cat([x19, x3], dim=1)  # [B, 192, H/2, W/2] (128+64)
+        x21 = self.conv_dec2(x20)  # [B, 64, H/2, W/2]
 
-        x22 = F.interpolate(x21, [x2.shape[2], x2.shape[3]], mode="nearest")
-        x23 = torch.cat([x22, x2], dim=1)
-        x24 = self.conv_dec3(x23)  # [H, W]
+        x22 = F.interpolate(x21, [x2.shape[2], x2.shape[3]], mode="nearest")  # [B, 64, H, W]
+        x23 = torch.cat([x22, x2], dim=1)  # [B, 128, H, W] (64+64)
+        x24 = self.conv_dec3(x23)  # [B, 16, H, W]
 
         # c0 = 1 / (1 + self.conf0(x15))
         # c1 = 1 / (1 + self.conf1(x18))
         # c2 = 1 / (1 + self.conf2(x21))
-        c0 = nn.Sigmoid()(-self.conf0(x15))
-        c1 = nn.Sigmoid()(-self.conf1(x18))
-        c2 = nn.Sigmoid()(-self.conf2(x21))
-        c3 = nn.Sigmoid()(-self.conf3(x24))
+        c0 = nn.Sigmoid()(-self.conf0(x15))  # [B, 1, H/8, W/8]
+        c1 = nn.Sigmoid()(-self.conf1(x18))  # [B, 1, H/4, W/4]
+        c2 = nn.Sigmoid()(-self.conf2(x21))  # [B, 1, H/2, W/2]
+        c3 = nn.Sigmoid()(-self.conf3(x24))  # [B, 1, H, W]
 
         if self.estimate_depth:
             # its actually height, not depth
@@ -170,10 +170,10 @@ class VGGUnet(nn.Module):
             d2 = process_depth(self.depth2(x21))
             d3 = process_depth(self.depth3(x24))
 
-        x15 = L2_norm(x15)
-        x18 = L2_norm(x18)
-        x21 = L2_norm(x21)
-        x24 = L2_norm(x24)
+        x15 = L2_norm(x15)  # [B, 256, H/8, W/8]
+        x18 = L2_norm(x18)  # [B, 128, H/4, W/4]
+        x21 = L2_norm(x21)  # [B, 64, H/2, W/2]
+        x24 = L2_norm(x24)  # [B, 16, H, W]
 
 
         if self.estimate_depth:
@@ -366,27 +366,31 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         # block0
-        x0 = self.conv0(x)
-        x1 = self.relu(x0)
-        x2 = self.conv2(x1)
-        x3, ind3 = self.max_pool(x2)  # [H/2, W/2]
+        x0 = self.conv0(x)     # [B, 64, 320, 640]  # conv3x3
+        x1 = self.relu(x0)     # [B, 64, 320, 640]
+        x2 = self.conv2(x1)    # [B, 64, 320, 640]  # conv3x3
+        x3, ind3 = self.max_pool(x2)  # [B, 64, 160, 320]  # H/2, W/2
 
-        x4 = self.relu(x3)
-        x5 = self.conv5(x4)
-        x6 = self.relu(x5)
-        x7 = self.conv7(x6)
-        x8, ind8 = self.max_pool(x7)  # [H/4, W/4]
+        # block1
+        x4 = self.relu(x3)     # [B, 64, 160, 320]
+        x5 = self.conv5(x4)    # [B, 128, 160, 320]  # conv3x3
+        x6 = self.relu(x5)     # [B, 128, 160, 320]
+        x7 = self.conv7(x6)    # [B, 128, 160, 320]  # conv3x3
+        x8, ind8 = self.max_pool(x7)  # [B, 128, 80, 160]  # H/4, W/4
 
         # block2
-        x9 = self.relu(x8)
-        x10 = self.conv10(x9)
-        x11 = self.relu(x10)
-        x12 = self.conv12(x11)
-        x13 = self.relu(x12)
-        x14 = self.conv14(x13)
-        x15, ind15 = self.max_pool(x14)  # [H/8, W/8]
-           
-        return x15, x8, x3
+        x9 = self.relu(x8)     # [B, 128, 80, 160]
+        x10 = self.conv10(x9)  # [B, 256, 80, 160]  # conv3x3
+        x11 = self.relu(x10)   # [B, 256, 80, 160]
+        x12 = self.conv12(x11) # [B, 256, 80, 160]  # conv3x3
+        x13 = self.relu(x12)   # [B, 256, 80, 160]
+        x14 = self.conv14(x13) # [B, 256, 80, 160]  # conv3x3
+        x15, ind15 = self.max_pool(x14)  # [B, 256, 40, 80]  # H/8, W/8
+
+        return x15, x8, x3  # 返回三个尺度的特征
+        # x15: [B, 256, 40, 80]   最小尺度
+        # x8:  [B, 128, 80, 160]  中等尺度
+        # x3:  [B, 64, 160, 320]  最大尺度
 
 
 class Decoder(nn.Module):
