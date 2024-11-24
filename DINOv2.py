@@ -11,10 +11,6 @@ class DINOv2Featurizer(nn.Module):
         self.arch = arch
         self.patch_size = patch_size
         self.feat_type = feat_type
-
-        # 计算需要的填充大小
-        self.pad_h = (self.patch_size - 512 % self.patch_size) % self.patch_size
-        self.pad_w = (self.patch_size - 512 % self.patch_size) % self.patch_size
         
         # 设置模型缓存目录
         torch.hub.set_dir('/home/yijing/workspace/torch_cache')
@@ -47,6 +43,18 @@ class DINOv2Featurizer(nn.Module):
                 final_size=256
             )
         ])
+
+        def center_padding(self, x):
+            _, _, h, w = x.shape
+            pad_h = (self.patch_size - h % self.patch_size) % self.patch_size
+            pad_w = (self.patch_size - w % self.patch_size) % self.patch_size
+            
+            pad_t = pad_h // 2
+            pad_b = pad_h - pad_t
+            pad_l = pad_w // 2
+            pad_r = pad_w - pad_l
+            
+            return F.pad(x, (pad_l, pad_r, pad_t, pad_b))
         
         # 添加三个尺度的置信度预测头
         self.conf_heads = nn.ModuleList([
@@ -57,12 +65,12 @@ class DINOv2Featurizer(nn.Module):
         ])
 
     def forward(self, x):  # x: [B, 3, 512, 512]
-        x = F.pad(x, (0, self.pad_w, 0, self.pad_h), mode='reflect')
+        x = self.center_padding(x)
         # 获取高分辨率特征图
         hr_feats = self.model(x)  # [B, 384, 512, 512]
 
         # 裁剪回原始大小
-        hr_feats = hr_feats[:, :, :512, :512]
+        hr_feats = hr_feats[:, :, pad_t:pad_t+512, pad_l:pad_l+512]
         
         # 生成多尺度特征
         sat_feat_list = []
@@ -110,7 +118,7 @@ class Encoder(nn.Module):
             pad_l = pad_w // 2
             pad_r = pad_w - pad_l
             
-            return F.pad(x, (pad_l, pad_r, pad_t, pad_b), mode='reflect')
+            return F.pad(x, (pad_l, pad_r, pad_t, pad_b))
         
 
         # 创建三个下采样器，对齐VGG的特征维度和尺寸
