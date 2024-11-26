@@ -5,3 +5,8 @@
 *.pth.tar
 *.pth.tar.gz
 __pycache__
+dataLoader/oxford/lookup_test.txt
+dataLoader/oxford/lookup_training.txt
+dataLoader/oxford/training.txt
+dataLoader/test2_files.txt
+dataLoader/train_files.txt
