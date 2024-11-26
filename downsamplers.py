@@ -4,49 +4,11 @@ from kornia.filters import gaussian_blur2d
 
 
 class SimpleDownsampler(torch.nn.Module):
-    def get_kernel(self):
-        k = self.kernel_params.unsqueeze(0).unsqueeze(0).abs()
-        k /= k.sum()
-        return k
-
-    def __init__(self, in_dim, out_dim, kernel_size, final_size, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.kernel_size = kernel_size
-        self.final_size = final_size
-        self.in_dim = in_dim
-        self.out_dim = out_dim
-        
-        # 空间下采样的卷积核参数
-        self.kernel_params = torch.nn.Parameter(torch.ones(kernel_size, kernel_size))
-        
-        # 通道降维的1x1卷积
-        self.dim_reduction = torch.nn.Conv2d(
-            in_channels=in_dim,
-            out_channels=out_dim,
-            kernel_size=1,
-            bias=False
-        )
-
-    def forward(self, imgs, guidance):
-        b, c, h, w = imgs.shape
-        
-        # 1. 先进行空间下采样
-        input_imgs = imgs.reshape(b * c, 1, h, w)
-        stride = (h - self.kernel_size) // (self.final_size - 1)
-        
-        spatial_down = F.conv2d(
-            input_imgs,
-            self.get_kernel(),
-            stride=stride
-        ).reshape(b, c, self.final_size, self.final_size)
-        
-        # 2. 再进行通道降维
-        return self.dim_reduction(spatial_down)  # [B, out_dim, final_size, final_size]
-    
-
-class Grd_SimpleDownsampler(torch.nn.Module):
     def __init__(self, in_dim, out_dim, kernel_size, final_size):
         super().__init__()
+        self.in_dim = in_dim
+        self.out_dim = out_dim
+        self.kernel_size = kernel_size
         
         # 支持final_size为元组或单个数字
         if isinstance(final_size, tuple):
@@ -54,32 +16,37 @@ class Grd_SimpleDownsampler(torch.nn.Module):
         else:
             self.final_h = self.final_w = final_size
             
-        # 计算stride以达到目标尺寸
-        self.stride_h = None
-        self.stride_w = None
+        # 创建可学习的卷积核参数
+        self.kernel_params = torch.nn.Parameter(torch.ones(kernel_size, kernel_size))
         
-        self.conv = torch.nn.Conv2d(
-            in_dim, 
-            out_dim,
-            kernel_size=kernel_size,
-            stride=1,  # 先用1，后面用interpolate调整尺寸
-            padding=kernel_size//2
-        )
+        # 通道变换层
+        self.channel_conv = torch.nn.Conv2d(in_dim, out_dim, 1)
         
-    def forward(self, x, mask=None):
-        # x: [B, C, H, W]
-        B, C, H, W = x.shape
+    def get_kernel(self):
+        # 获取归一化的卷积核
+        k = self.kernel_params.unsqueeze(0).unsqueeze(0).abs()  # [1, 1, k, k]
+        k /= k.sum()  # 归一化确保权重和为1
+        return k
         
-        # 先做卷积
-        x = self.conv(x)  # [B, out_dim, H, W]
+    def forward(self, x, guidance=None):
+        b, c, h, w = x.shape
         
-        # 然后用interpolate调整到目标尺寸
-        x = F.interpolate(
-            x,
-            size=(self.final_h, self.final_w),
-            mode='bilinear',
-            align_corners=True
-        )
+        # 重塑输入以便对每个通道独立应用相同的卷积核
+        input_x = x.reshape(b * c, 1, h, w)  # [b*c, 1, h, w]
+        
+        # 计算步长以达到目标尺寸
+        stride_h = (h - self.kernel_size) // (self.final_h - 1)
+        stride_w = (w - self.kernel_size) // (self.final_w - 1)
+        
+        # 使用可学习的卷积核进行降采样
+        x = F.conv2d(
+            input_x,
+            self.get_kernel(),
+            stride=(stride_h, stride_w)
+        ).reshape(b, c, self.final_h, self.final_w)
+        
+        # 通道变换
+        x = self.channel_conv(x)
         
         return x
 

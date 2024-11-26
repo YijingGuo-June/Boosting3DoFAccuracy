@@ -1,0 +1,7 @@
+*.pth
+*.pt
+*.pkl
+*.ckpt
+*.pth.tar
+*.pth.tar.gz
+__pycache__

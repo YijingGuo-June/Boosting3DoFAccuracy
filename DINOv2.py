@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as T
 from PIL import Image
-from downsamplers import SimpleDownsampler, Grd_SimpleDownsampler
+from downsamplers import SimpleDownsampler
 
 class DINOv2Featurizer(nn.Module):
     def __init__(self, arch='vits14', patch_size=14, feat_type='patch'):
@@ -43,18 +43,6 @@ class DINOv2Featurizer(nn.Module):
                 final_size=256
             )
         ])
-
-        def center_padding(self, x):
-            _, _, h, w = x.shape
-            pad_h = (self.patch_size - h % self.patch_size) % self.patch_size
-            pad_w = (self.patch_size - w % self.patch_size) % self.patch_size
-            
-            pad_t = pad_h // 2
-            pad_b = pad_h - pad_t
-            pad_l = pad_w // 2
-            pad_r = pad_w - pad_l
-            
-            return F.pad(x, (pad_l, pad_r, pad_t, pad_b))
         
         # 添加三个尺度的置信度预测头
         self.conf_heads = nn.ModuleList([
@@ -64,7 +52,32 @@ class DINOv2Featurizer(nn.Module):
             ) for out_dim in [256, 128, 64]
         ])
 
+    def center_padding(self, x):
+        _, _, h, w = x.shape
+        pad_h = (self.patch_size - h % self.patch_size) % self.patch_size
+        pad_w = (self.patch_size - w % self.patch_size) % self.patch_size
+        
+        pad_t = pad_h // 2
+        pad_b = pad_h - pad_t
+        pad_l = pad_w // 2
+        pad_r = pad_w - pad_l
+        
+        return F.pad(x, (pad_l, pad_r, pad_t, pad_b))
+
+
+
     def forward(self, x):  # x: [B, 3, 512, 512]
+        # 计算填充值
+        _, _, h, w = x.shape
+        pad_h = (self.patch_size - h % self.patch_size) % self.patch_size
+        pad_w = (self.patch_size - w % self.patch_size) % self.patch_size
+        
+        pad_t = pad_h // 2
+        pad_b = pad_h - pad_t
+        pad_l = pad_w // 2
+        pad_r = pad_w - pad_l
+
+        # 添加填充到[514, 514]
         x = self.center_padding(x)
         # 获取高分辨率特征图
         hr_feats = self.model(x)  # [B, 384, 512, 512]
@@ -108,45 +121,55 @@ class Encoder(nn.Module):
         
         self.patch_size = 14
         
-        def center_padding(self, x):
-            _, _, h, w = x.shape
-            pad_h = (self.patch_size - h % self.patch_size) % self.patch_size
-            pad_w = (self.patch_size - w % self.patch_size) % self.patch_size
-            
-            pad_t = pad_h // 2
-            pad_b = pad_h - pad_t
-            pad_l = pad_w // 2
-            pad_r = pad_w - pad_l
-            
-            return F.pad(x, (pad_l, pad_r, pad_t, pad_b))
-        
 
         # 创建三个下采样器，对齐VGG的特征维度和尺寸
         self.downsamplers = nn.ModuleList([
             # x15: [B, 256, H/8, W/8] (40, 80)
-            Grd_SimpleDownsampler(
+            SimpleDownsampler(
                 in_dim=384,
                 out_dim=256,  # VGG x15的通道数
                 kernel_size=8,
-                final_size=40  # 320/8=40, 640/8=80
+                final_size=(40, 80)  # 320/8=40, 640/8=80
             ),
             # x8: [B, 128, H/4, W/4] (80, 160)
-            Grd_SimpleDownsampler(
+            SimpleDownsampler(
                 in_dim=384,
                 out_dim=128,  # VGG x8的通道数
                 kernel_size=4,
-                final_size=80  # 320/4=80, 640/4=160
+                final_size=(80, 160)  # 320/4=80, 640/4=160
             ),
             # x3: [B, 64, H/2, W/2] (160, 320)
-            Grd_SimpleDownsampler(
+            SimpleDownsampler(
                 in_dim=384,
                 out_dim=64,   # VGG x3的通道数
                 kernel_size=2,
-                final_size=160  # 320/2=160, 640/2=320
+                final_size=(160, 320)  # 320/2=160, 640/2=320
             )
         ])
 
+    def center_padding(self, x):
+        _, _, h, w = x.shape
+        pad_h = (self.patch_size - h % self.patch_size) % self.patch_size
+        pad_w = (self.patch_size - w % self.patch_size) % self.patch_size
+        
+        pad_t = pad_h // 2
+        pad_b = pad_h - pad_t
+        pad_l = pad_w // 2
+        pad_r = pad_w - pad_l
+        
+        return F.pad(x, (pad_l, pad_r, pad_t, pad_b))
+
     def forward(self, x):  # x: [B, 3, 320, 640]
+        # 计算填充值
+        _, _, h, w = x.shape
+        pad_h = (self.patch_size - h % self.patch_size) % self.patch_size
+        pad_w = (self.patch_size - w % self.patch_size) % self.patch_size
+        
+        pad_t = pad_h // 2
+        pad_b = pad_h - pad_t
+        pad_l = pad_w // 2
+        pad_r = pad_w - pad_l
+
         # 添加填充到[322, 644]
         x = self.center_padding(x)
         
