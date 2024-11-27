@@ -3,7 +3,7 @@
 
 # from logging import _Level
 import os
-
+import wandb
 import torchvision.utils
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
@@ -198,6 +198,15 @@ def val(dataloader, net_test, args, save_path, epoch, best=0.0):
     f.write('====================================\n')
     f.close()
     result = np.mean(distance)
+    # 记录验证指标
+    wandb.log({
+        "val_distance_mean": np.mean(distance),
+        "val_distance_median": np.median(distance),
+        "val_within_1m": np.sum(distance < 1) / distance.shape[0] * 100,
+        "val_within_3m": np.sum(distance < 3) / distance.shape[0] * 100,
+        "val_within_5m": np.sum(distance < 5) / distance.shape[0] * 100,
+        "epoch": epoch
+    })
 
     net_test.train()
 
@@ -205,6 +214,7 @@ def val(dataloader, net_test, args, save_path, epoch, best=0.0):
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         torch.save(net.state_dict(), os.path.join(save_path, 'Model_best.pth'))
+        wandb.save(os.path.join(save_path, 'Model_best.pth'))  # 同步到wandb
 
     print('Finished Val')
     return result
@@ -235,6 +245,7 @@ def train(net, args, save_path):
     bestResult = 0.0
 
     time_start = time.time()
+    init_wandb(args)
     for epoch in range(args.resume, args.epochs):
         net.train()
 
@@ -257,6 +268,12 @@ def train(net, args, save_path):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()  # This step is responsible for updating weights
+
+            wandb.log({
+                "loss": loss.item(),
+                "epoch": epoch,
+                "loop": Loop
+            })
 
             if Loop % 10 == 9:
                 time_end = time.time()
@@ -324,6 +341,24 @@ if __name__ == '__main__':
 
     args = parse_args()
 
+    def init_wandb(args):
+    wandb.init(
+        project="vigor-cross-view",  # 项目名称
+        name=f"{args.proj}_{args.area}_{args.batch_size}_DINO_featup_frozen}",
+        config={
+            "learning_rate": 1e-4,
+            "batch_size": args.batch_size,
+            "epochs": args.epochs,
+            "area": args.area,
+            "rotation_range": args.rotation_range,
+            "proj": args.proj,
+            "use_uncertainty": args.use_uncertainty
+            }
+        )
+    
+    if not args.test:
+        init_wandb(args)
+
     mini_batch = args.batch_size
 
     save_path = getSavePath(args)
@@ -348,4 +383,7 @@ if __name__ == '__main__':
             print("resume from " + 'model_' + str(args.resume - 1) + '.pth')
 
         train(net, args, save_path)
+
+    if not args.test:
+        wandb.finish()
 

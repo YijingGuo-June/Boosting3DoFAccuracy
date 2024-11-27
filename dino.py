@@ -44,7 +44,7 @@ class DINO(torch.nn.Module):
         self.has_registers = "_reg" in model_name
 
         self.flatten = nn.Flatten(2)
-        self.mlp = MLP(input_dim=768, hidden_dim=512, output_dim=320)
+        self.mlp = MLP(input_dim=768, hidden_dim=512, output_dim=320) # 每个patch 768（16 * 16 * 3）
         self.unflatten = nn.Unflatten(2, (37, 37))
         self.conv_down = nn.Conv2d(in_channels=320, out_channels=320, kernel_size=3, stride=2, padding=1)
         self.relu = nn.ReLU()
@@ -67,10 +67,10 @@ class DINO(torch.nn.Module):
         #     num_layers - 1,
         # ]
         multilayers = [
-            num_layers // 4 - 1,
-            num_layers // 2 - 1,
-            num_layers // 4 * 3 - 1,
-            num_layers - 1,
+            num_layers // 4 - 1,  # 2
+            num_layers // 2 - 1,  # 5
+            num_layers // 4 * 3 - 1,  # 8
+            num_layers - 1,  # 11
         ]
 
         if return_multilayer:
