@@ -4,10 +4,11 @@
 # from logging import _Level
 import os
 import wandb
+wandb.login(key="2d4881eb88430e8cd54a64927537b41e4186425b")
 import torchvision.utils
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 import torch
 import torch.nn as nn
@@ -342,19 +343,20 @@ if __name__ == '__main__':
     args = parse_args()
 
     def init_wandb(args):
-    wandb.init(
-        project="vigor-cross-view",  # 项目名称
-        name=f"{args.proj}_{args.area}_{args.batch_size}_DINO_featup_frozen}",
-        config={
-            "learning_rate": 1e-4,
-            "batch_size": args.batch_size,
-            "epochs": args.epochs,
-            "area": args.area,
-            "rotation_range": args.rotation_range,
-            "proj": args.proj,
-            "use_uncertainty": args.use_uncertainty
-            }
-        )
+        wandb.init(
+            entity="YijingGuo",
+            project="Boosting2DOF_Vigor",  # 项目名称
+            name=f"{args.proj}_{args.area}_{args.batch_size}_DINO_featup_frozen_same",
+            config={
+                "learning_rate": 1e-4,
+                "batch_size": args.batch_size,
+                "epochs": args.epochs,
+                "area": args.area,
+                "rotation_range": args.rotation_range,
+                "proj": args.proj,
+                "use_uncertainty": args.use_uncertainty
+                }
+            )
     
     if not args.test:
         init_wandb(args)
