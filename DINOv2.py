@@ -4,20 +4,35 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 from PIL import Image
 from downsamplers import SimpleDownsampler
+from SLR import add_extra_weights, ScaledLowRankAdapter, ScaledLowRankConvAdapter, ScaledLowRankConfigTimmViT
 
 class DINOv2Featurizer(nn.Module):
-    def __init__(self, arch='vits14', patch_size=14, feat_type='patch'):
+    def __init__(self, arch='vits14', patch_size=14, feat_type='patch', use_adapter=True):
         super().__init__()
         self.arch = arch
         self.patch_size = patch_size
         self.feat_type = feat_type
-        
+
         # 设置模型缓存目录
         torch.hub.set_dir('/home/yijing/workspace/torch_cache')
         # 加载能输出高分辨率特征的模型
         self.model = torch.hub.load("mhamilton723/FeatUp", 'dinov2', trust_repo=True)
         for param in self.model.parameters():
             param.requires_grad = False
+
+        self.use_adapter = use_adapter
+
+        if use_adapter:
+            config = ScaledLowRankConfigTimmViT()
+
+        add_extra_weights(
+            self.model,
+            config,
+            adapter=ScaledLowRankAdapter,
+            conv_adapter=ScaledLowRankConvAdapter,
+            trainable=True,
+            only_scaler_trainable=False
+        )
 
         # 创建三个下采样器，同时进行空间和通道的降维
         self.downsamplers = nn.ModuleList([
@@ -43,6 +58,16 @@ class DINOv2Featurizer(nn.Module):
                 final_size=256
             )
         ])
+
+        for downsampler in self.downsamplers:
+            add_extra_weights(
+                downsampler,
+                config,
+                adapter=ScaledLowRankAdapter,
+                conv_adapter=ScaledLowRankConvAdapter,
+                trainable=True,
+                only_scaler_trainable=False
+            )
         
         # 添加三个尺度的置信度预测头
         self.conf_heads = nn.ModuleList([
@@ -110,7 +135,7 @@ class DINOv2Featurizer(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self):
+    def __init__(self, use_adapter=True):
         super().__init__()
         
         # 加载DINOv2主干网络
@@ -146,6 +171,28 @@ class Encoder(nn.Module):
                 final_size=(160, 320)  # 320/2=160, 640/2=320
             )
         ])
+
+        if use_adapter:
+            config = ScaledLowRankConfigTimmViT()
+            
+            # 为backbone添加适配器
+            add_extra_weights(
+                self.backbone,
+                config,
+                adapter=ScaledLowRankAdapter,
+                conv_adapter=ScaledLowRankConvAdapter,
+                trainable=True
+            )
+            
+            # 为downsamplers添加适配器
+            for downsampler in self.downsamplers:
+                add_extra_weights(
+                    downsampler,
+                    config,
+                    adapter=ScaledLowRankAdapter,
+                    conv_adapter=ScaledLowRankConvAdapter,
+                    trainable=True
+                )
 
     def center_padding(self, x):
         _, _, h, w = x.shape

@@ -8,7 +8,7 @@ wandb.login(key="2d4881eb88430e8cd54a64927537b41e4186425b")
 import torchvision.utils
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 import torch
 import torch.nn as nn
@@ -305,7 +305,7 @@ def parse_args():
 
     parser.add_argument('--rotation_range', type=float, default=0., help='degree')
 
-    parser.add_argument('--batch_size', type=int, default=4, help='batch size')
+    parser.add_argument('--batch_size', type=int, default=2, help='batch size')
 
     parser.add_argument('--proj', type=str, default='CrossAttn', help='geo, polar, nn, CrossAttn')
 

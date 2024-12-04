@@ -13,8 +13,8 @@ class ScaledLowRankConvAdapter(torch.nn.Module):
         self.kernel_size = conv2d.kernel_size
         self.scaler = torch.nn.Parameter(torch.ones(self.proj.out_channels))
 
-        assert conv2d.kernel_size == (16, 16)
-        kernel_size = (4, 4)
+        assert conv2d.kernel_size == (14, 14)
+        kernel_size = (2, 2)
         self.down = torch.nn.Conv2d(
             self.proj.in_channels,
             self.hidden_dim,
@@ -24,14 +24,17 @@ class ScaledLowRankConvAdapter(torch.nn.Module):
         self.up = torch.nn.Conv2d(
             self.hidden_dim,
             self.proj.out_channels,
-            kernel_size=kernel_size,
-            stride=kernel_size,
+            # kernel_size=kernel_size,
+            # stride=kernel_size,
+            kernel_size=(7, 7),
+            stride=(7, 7),
         )
 
         for p in self.proj.parameters():
             p.requires_grad = False
 
-    def forward(self, x: torch.tensor) -> torch.tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        print('x.shape:', x.shape)
         x_lr = self.up(self.down(x))
         x = self.proj(x)
 
@@ -69,7 +72,7 @@ class ScaledLowRankAdapter(torch.nn.Module):
         self.up.bias.data.fill_(0)
         torch.nn.init.normal_(self.down.weight.data)
 
-    def forward(self, x: torch.tensor) -> torch.tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x *= self.in_scaler
         # x_lr = self.up(self.down(x))
         # x = self.linear(x)
@@ -139,6 +142,8 @@ def add_extra_weights(
                     if isinstance(layer, torch.nn.Linear):
                         adp = adapter
                     elif isinstance(layer, torch.nn.Conv2d):
+                        if conv_adapter is None:
+                            continue
                         adp = conv_adapter
                     else:
                         raise ValueError()
