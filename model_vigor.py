@@ -6,8 +6,8 @@ from torchvision import transforms
 import utils
 import os
 import torchvision.transforms.functional as TF
-from DINOv2 import DINOv2Featurizer
-from DINOv2 import Encoder as DINOv2Encoder
+from DINOv2_featup import DINOv2Featurizer
+from DINOv2_featup import Encoder as DINOv2Encoder
 
 # from GRU1 import ElevationEsitimate,VisibilityEsitimate,VisibilityEsitimate2,GRUFuse
 # from VGG import VGGUnet, VGGUnet_G2S

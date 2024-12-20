@@ -2,6 +2,8 @@ import time
 
 import torch
 
+import einops as E  
+
 from .utils.utils import center_padding, tokens_to_output
 from torch.nn.functional import interpolate
 import torch.nn as nn
@@ -44,7 +46,7 @@ class DINO(torch.nn.Module):
         self.has_registers = "_reg" in model_name
 
         self.flatten = nn.Flatten(2)
-        self.mlp = MLP(input_dim=768, hidden_dim=512, output_dim=320) # 每个patch 768（16 * 16 * 3）
+        self.mlp = MLP(input_dim=768, hidden_dim=512, output_dim=320)
         self.unflatten = nn.Unflatten(2, (37, 37))
         self.conv_down = nn.Conv2d(in_channels=320, out_channels=320, kernel_size=3, stride=2, padding=1)
         self.relu = nn.ReLU()
@@ -67,10 +69,10 @@ class DINO(torch.nn.Module):
         #     num_layers - 1,
         # ]
         multilayers = [
-            num_layers // 4 - 1,  # 2
-            num_layers // 2 - 1,  # 5
-            num_layers // 4 * 3 - 1,  # 8
-            num_layers - 1,  # 11
+            num_layers // 4 - 1,
+            num_layers // 2 - 1,
+            num_layers // 4 * 3 - 1,
+            num_layers - 1,
         ]
 
         if return_multilayer:
@@ -86,24 +88,28 @@ class DINO(torch.nn.Module):
         # define layer name (for logging)
         self.layer = "-".join(str(_x) for _x in self.multilayers)
 
-        def center_padding(images, patch_size):
-            _, _, h, w = images.shape
-            diff_h = h % patch_size
-            diff_w = w % patch_size
+        def tokens_to_output(output_type, dense_tokens, cls_token, feat_hw):
+            if output_type == "cls":
+                assert cls_token is not None
+                output = cls_token
+            elif output_type == "gap":
+                output = dense_tokens.mean(dim=1)
+            elif output_type == "dense":
+                h, w = feat_hw
+                dense_tokens = E.rearrange(dense_tokens, "b (h w) c -> b c h w", h=h, w=w)
+                output = dense_tokens.contiguous()
+            elif output_type == "dense-cls":
+                assert cls_token is not None
+                h, w = feat_hw
+                dense_tokens = E.rearrange(dense_tokens, "b (h w) c -> b c h w", h=h, w=w)
+                cls_token = cls_token[:, :, None, None].repeat(1, 1, h, w)
+                output = torch.cat((dense_tokens, cls_token), dim=1).contiguous()
+            else:
+                raise ValueError()
 
-            if diff_h == 0 and diff_w == 0:
-                return images
-
-            pad_h = patch_size - diff_h
-            pad_w = patch_size - diff_w
-
-            pad_t = pad_h // 2
-            pad_l = pad_w // 2
-            pad_r = pad_w - pad_l
-            pad_b = pad_h - pad_t
-
-            images = F.pad(images, (pad_l, pad_r, pad_t, pad_b))
-            return images
+            return output
+        
+        
 
     def forward(self, images):
 

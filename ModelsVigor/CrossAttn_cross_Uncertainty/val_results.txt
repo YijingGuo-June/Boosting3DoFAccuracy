@@ -181,3 +181,62 @@ distance within 1 meters (init, pred): 0.33967391304347827 10.345496894409937
 distance within 3 meters (init, pred): 2.0671583850931676 49.9805900621118
 distance within 5 meters (init, pred): 5.163043478260869 69.71079192546584
 ====================================
+
+frozen dinov2_vits14以及featup，只加上lora看看仅fine-tune不pre-train的表现
+====================================
+       EPOCH: 0
+Time per image (second): 0.26780308385073026
+Distance average: (init, pred)14.285706 19.69941
+Distance median: (init, pred)14.991762 20.030365
+distance within 1 meters (init, pred): 0.33967391304347827 0.25232919254658387
+distance within 3 meters (init, pred): 2.0671583850931676 3.5423136645962736
+distance within 5 meters (init, pred): 5.163043478260869 8.59860248447205
+====================================
+====================================
+       EPOCH: 1
+Time per image (second): 0.25646916739874004
+Distance average: (init, pred)14.285706 19.465158
+Distance median: (init, pred)14.991762 19.766264
+distance within 1 meters (init, pred): 0.33967391304347827 0.2911490683229814
+distance within 3 meters (init, pred): 2.0671583850931676 2.7853260869565215
+distance within 5 meters (init, pred): 5.163043478260869 7.64751552795031
+====================================
+====================================
+       EPOCH: 2
+Time per image (second): 0.2538687786237794
+Distance average: (init, pred)14.285706 18.419407
+Distance median: (init, pred)14.991762 18.640743
+distance within 1 meters (init, pred): 0.33967391304347827 0.3784937888198758
+distance within 3 meters (init, pred): 2.0671583850931676 3.610248447204969
+distance within 5 meters (init, pred): 5.163043478260869 9.093555900621118
+====================================
+====================================
+       EPOCH: 3
+Time per image (second): 0.2551659384268041
+Distance average: (init, pred)14.285706 17.69868
+Distance median: (init, pred)14.991762 17.016666
+distance within 1 meters (init, pred): 0.33967391304347827 0.4076086956521739
+distance within 3 meters (init, pred): 2.0671583850931676 4.2022515527950315
+distance within 5 meters (init, pred): 5.163043478260869 10.326086956521738
+====================================
+
+
+只对dinov2_vits14进行lora微调，featup不加lora的表现
+====================================
+       EPOCH: 0
+Time per image (second): 0.2533007928673525
+Distance average: (init, pred)14.285706 18.190922
+Distance median: (init, pred)14.991762 17.824718
+distance within 1 meters (init, pred): 0.33967391304347827 0.21350931677018634
+distance within 3 meters (init, pred): 2.0671583850931676 2.4747670807453415
+distance within 5 meters (init, pred): 5.163043478260869 6.696428571428571
+====================================
+====================================
+       EPOCH: 1
+Time per image (second): 0.2885602457645517
+Distance average: (init, pred)14.285706 18.070158
+Distance median: (init, pred)14.991762 18.131008
+distance within 1 meters (init, pred): 0.33967391304347827 0.2329192546583851
+distance within 3 meters (init, pred): 2.0671583850931676 2.329192546583851
+distance within 5 meters (init, pred): 5.163043478260869 6.10442546583851
+====================================

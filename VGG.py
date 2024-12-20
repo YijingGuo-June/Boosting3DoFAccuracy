@@ -170,7 +170,7 @@ class VGGUnet(nn.Module):
             d2 = process_depth(self.depth2(x21))
             d3 = process_depth(self.depth3(x24))
 
-        x15 = L2_norm(x15)  # [B, 256, H/8, W/8]
+        x15 = L2_norm(x15)  # [B, 256, H/8, W/8] H=512, W=512
         x18 = L2_norm(x18)  # [B, 128, H/4, W/4]
         x21 = L2_norm(x21)  # [B, 64, H/2, W/2]
         x24 = L2_norm(x24)  # [B, 16, H, W]

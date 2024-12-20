@@ -8,7 +8,7 @@ wandb.login(key="2d4881eb88430e8cd54a64927537b41e4186425b")
 import torchvision.utils
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 import torch
 import torch.nn as nn
