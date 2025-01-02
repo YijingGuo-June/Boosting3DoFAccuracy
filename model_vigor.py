@@ -8,6 +8,7 @@ import os
 import torchvision.transforms.functional as TF
 from DINOv2_featup import DINOv2Featurizer
 from DINOv2_featup import Encoder as DINOv2Encoder
+from DINOv2_MAE import MAE_Sat, MAE_Grd
 
 # from GRU1 import ElevationEsitimate,VisibilityEsitimate,VisibilityEsitimate2,GRUFuse
 # from VGG import VGGUnet, VGGUnet_G2S
@@ -33,10 +34,13 @@ class ModelVigor(nn.Module):
 
         self.rotation_range = args.rotation_range
 
-        self.SatFeatureNet = DINOv2Featurizer()
+        # self.SatFeatureNet = DINOv2Featurizer()
+        # self.SatFeatureNet = VGGUnet(self.level)
+        self.SatFeatureNet = MAE_Sat()
 
         if self.args.proj == 'CrossAttn':
-            self.GrdEnc = DINOv2Encoder()
+            # self.GrdEnc = DINOv2Encoder()
+            self.GrdEnc = Encoder()
             self.GrdDec = Decoder()
             self.Dec4 = Decoder4()
             self.Dec2 = Decoder2()

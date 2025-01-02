@@ -104,14 +104,14 @@ class DINOv2Featurizer(nn.Module):
 
         # 添加填充到[518, 518]
         x = self.center_padding(x)
-        print('x.shape: ', x.shape)
+        # print('x.shape: ', x.shape)
         # 获取高分辨率特征图
         hr_feats = self.model(x)  # [B, 384, 592, 592]
-        print('hr_feats.shape: ', hr_feats.shape)
+        # print('hr_feats.shape: ', hr_feats.shape)
 
         # 裁剪回原始大小
         hr_feats = hr_feats[:, :, pad_t:pad_t+512, pad_l:pad_l+512]
-        print('hr_feats_cropped.shape: ', hr_feats.shape)
+        # print('hr_feats_cropped.shape: ', hr_feats.shape)
         
         # 生成多尺度特征
         sat_feat_list = []
@@ -120,19 +120,19 @@ class DINOv2Featurizer(nn.Module):
         # 使用下采样器生成多尺度特征
         # level 0: H/8 x W/8
         feat0 = self.downsamplers[0](hr_feats, None)  # [B, 256, 64, 64]
-        print('feat0.shape: ', feat0.shape)
+        # print('feat0.shape: ', feat0.shape)
         sat_feat_list.append(feat0)
         sat_conf_list.append(self.conf_heads[0](feat0))
         
         # level 1: H/4 x W/4
         feat1 = self.downsamplers[1](hr_feats, None)  # [B, 128, 128, 128]
-        print('feat1.shape: ', feat1.shape)
+        # print('feat1.shape: ', feat1.shape)
         sat_feat_list.append(feat1)
         sat_conf_list.append(self.conf_heads[1](feat1))
         
         # level 2: H/2 x W/2
         feat2 = self.downsamplers[2](hr_feats, None)  # [B, 64, 256, 256]
-        print('feat2.shape: ', feat2.shape)
+        # print('feat2.shape: ', feat2.shape)
         sat_feat_list.append(feat2)
         sat_conf_list.append(self.conf_heads[2](feat2))
 

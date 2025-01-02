@@ -4,11 +4,11 @@
 # from logging import _Level
 import os
 import wandb
-wandb.login(key="2d4881eb88430e8cd54a64927537b41e4186425b")
+# wandb.login(key="2d4881eb88430e8cd54a64927537b41e4186425b")
 import torchvision.utils
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 import torch
 import torch.nn as nn
@@ -236,7 +236,10 @@ def triplet_loss(corr_maps, gt_shift_u, gt_shift_v):
         pos = corr[range(B), h.long(), w.long()]  # [B]
         # print(pos.shape)
         pos_neg = pos.reshape(-1, 1, 1) - corr  # [B, H, W]
-        loss = torch.sum(torch.log(1 + torch.exp(pos_neg * 10))) / (B * (corr_H * corr_W - 1))
+        # 添加数值稳定性
+        pos_neg = pos_neg.clamp(-10, 10)  # 限制范围防止exp爆炸
+        denominator = max(B * (corr_H * corr_W - 1), 1)
+        loss = torch.sum(torch.log(1 + torch.exp(pos_neg * 10))) / denominator
         losses.append(loss)
 
     return torch.sum(torch.stack(losses, dim=0))
@@ -246,6 +249,7 @@ def train(net, args, save_path):
     bestResult = 0.0
 
     time_start = time.time()
+    
     init_wandb(args)
     for epoch in range(args.resume, args.epochs):
         net.train()
@@ -305,7 +309,7 @@ def parse_args():
 
     parser.add_argument('--rotation_range', type=float, default=0., help='degree')
 
-    parser.add_argument('--batch_size', type=int, default=2, help='batch size')
+    parser.add_argument('--batch_size', type=int, default=8, help='batch size')
 
     parser.add_argument('--proj', type=str, default='CrossAttn', help='geo, polar, nn, CrossAttn')
 
@@ -347,6 +351,7 @@ if __name__ == '__main__':
             entity="YijingGuo",
             project="Boosting2DOF_Vigor",  # 项目名称
             name=f"{args.proj}_{args.area}_{args.batch_size}_DINO_featup_frozen_same",
+            mode="online",
             config={
                 "learning_rate": 1e-4,
                 "batch_size": args.batch_size,
